@@ -1,5 +1,6 @@
 use auth_service::Application;
 use reqwest::Client;
+use uuid::Uuid;
 
 pub struct TestApp {
     pub address: String,
@@ -23,6 +24,18 @@ impl TestApp {
 
         // Create new `TestApp` instance and return it
         TestApp { http_client, address }
+    }
+
+    pub async fn post_signup<Body>(&self, body: &Body) -> reqwest::Response
+        where
+            Body: serde::Serialize,
+    {
+        self.http_client
+            .post(&format!("{}/signup", &self.address))
+            .json(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
     }
 
     pub async fn get_root(&self) -> reqwest::Response {
@@ -72,4 +85,8 @@ impl TestApp {
             .await
             .expect("Failed to execute request.")
     }
+}
+
+pub fn get_random_email() -> String {
+    format!("{}@example.com", Uuid::new_v4())
 }

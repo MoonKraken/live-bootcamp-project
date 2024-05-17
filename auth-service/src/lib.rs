@@ -1,6 +1,6 @@
 mod routes;
 use std::error::Error;
-use axum::{response::Html, routing::get, serve::Serve, Router};
+use axum::{response::Html, routing::{get, post}, serve::Serve, Router};
 use routes::*;
 use tower_http::services::ServeDir;
 
@@ -26,6 +26,7 @@ impl Application {
             .route("/hello", get(hello_handler))
             .route("/login", get(login_handler))
             .route("/signup", get(signup_handler))
+            .route("/signup", post(signup_handler))
             .route("/logout", get(logout_handler))
             .route("/verify_2fa", get(verify_2fa_handler))
             .route("/verify_token", get(verify_token))
