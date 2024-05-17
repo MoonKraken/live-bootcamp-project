@@ -1,7 +1,8 @@
+mod routes;
 use std::error::Error;
-use axum::{response::{Html, IntoResponse}, routing::get, serve::Serve, Router};
+use axum::{response::Html, routing::get, serve::Serve, Router};
+use routes::*;
 use tower_http::services::ServeDir;
-use axum::http::StatusCode;
 
 // This struct encapsulates our application-related logic.
 pub struct Application {
@@ -14,26 +15,6 @@ pub struct Application {
 async fn hello_handler() -> Html<&'static str> {
     // Update this to a custom message!
     Html("<h1>Hello, My name is MoonKraken!</h1>")
-}
-async fn signup_handler() -> impl IntoResponse {
-    // Update this to a custom message!
-    StatusCode::OK.into_response()
-}
-async fn login_handler() -> impl IntoResponse {
-    // Update this to a custom message!
-    StatusCode::OK.into_response()
-}
-async fn logout_handler() -> impl IntoResponse {
-    // Update this to a custom message!
-    StatusCode::OK.into_response()
-}
-async fn verify_2fa_handler() -> impl IntoResponse {
-    // Update this to a custom message!
-    StatusCode::OK.into_response()
-}
-async fn verify_token() -> impl IntoResponse {
-    // Update this to a custom message!
-    StatusCode::OK.into_response()
 }
 
 impl Application {
