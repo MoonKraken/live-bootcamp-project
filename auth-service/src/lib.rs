@@ -1,8 +1,12 @@
-mod routes;
+pub mod app_state;
+pub mod routes;
+pub mod services;
+pub mod domain;
 use std::error::Error;
 use axum::{response::Html, routing::{get, post}, serve::Serve, Router};
 use routes::*;
 use tower_http::services::ServeDir;
+use app_state::AppState;
 
 // This struct encapsulates our application-related logic.
 pub struct Application {
@@ -18,7 +22,7 @@ async fn hello_handler() -> Html<&'static str> {
 }
 
 impl Application {
-    pub async fn build(address: &str) -> Result<Self, Box<dyn Error>> {
+    pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
         // Move the Router definition from `main.rs` to here.
         // Also, remove the `hello` route.
         // We don't need it at this point!
@@ -30,6 +34,7 @@ impl Application {
             .route("/logout", get(logout_handler))
             .route("/verify_2fa", get(verify_2fa_handler))
             .route("/verify_token", get(verify_token))
+            .with_state(app_state)
             .nest_service("/", ServeDir::new("assets"));
         let listener = tokio::net::TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();
