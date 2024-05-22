@@ -4,7 +4,9 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::app_state::AppState;
+use crate::domain::error::AuthAPIError;
 use crate::domain::user::User;
+use crate::services::hashmap_user_store::UserStoreError;
 
 #[derive(Deserialize, Debug)]
 pub struct SignupRequest {
@@ -22,19 +24,29 @@ pub struct SignupResponse {
 pub async fn signup_handler(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AuthAPIError> {
+
+    if request.email.is_empty() || !request.email.contains("@") {
+        return Err(AuthAPIError::InvalidCredentials)
+    }
     // Create a new `User` instance using data in the `request`
     let mut user_store = state.user_store.write().unwrap();
 
-    let _ = user_store.add_user(User {
+    let add_res = user_store.add_user(User {
         email: request.email,
         password: request.password,
         requires_2fa: request.requires_2fa,
     });
 
+    if let Err(e) = add_res {
+        if e == UserStoreError::UserAlreadyExists {
+            return Err(AuthAPIError::UserAlreadyExists)
+        }
+    }
+
     let response = Json(SignupResponse {
         message: "User created successfully!".to_string(),
     });
 
-    (StatusCode::CREATED, response)
+    Ok((StatusCode::CREATED, response))
 }
