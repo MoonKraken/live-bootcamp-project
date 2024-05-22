@@ -1,14 +1,7 @@
 use std::collections::HashMap;
 
 use crate::domain::user::User;
-
-#[derive(Debug, PartialEq)]
-pub enum UserStoreError {
-    UserAlreadyExists,
-    UserNotFound,
-    InvalidCredentials,
-    UnexpectedError,
-}
+use crate::domain::data_stores::{UserStore, UserStoreError};
 
 // TODO: Create a new struct called `HashmapUserStore` containing a `users` field
 // which stores a `HashMap`` of email `String`s mapped to `User` objects.
@@ -18,8 +11,8 @@ pub struct HashMapUserStore {
     users: HashMap<String, User>,
 }
 
-impl HashMapUserStore {
-    pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
+impl UserStore for HashMapUserStore {
+    fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
         // Return `UserStoreError::UserAlreadyExists` if the user already exists,
         // otherwise insert the user into the hashmap and return `Ok(())`.
         if self.users.contains_key(&user.email) {
@@ -36,7 +29,7 @@ impl HashMapUserStore {
     // `User` object or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
 
-    pub fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
+    fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
         match self.users.get(email) {
             Some(user) => Ok(user.clone()),
             _ => Err(UserStoreError::UserNotFound),
@@ -49,7 +42,7 @@ impl HashMapUserStore {
     // Return `UserStoreError::UserNotFound` if the user can not be found.
     // Return `UserStoreError::InvalidCredentials` if the password is incorrect.
 
-    pub fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+    fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
         match self.users.get(email) {
             Some(user) => {
                 if user.password == password {

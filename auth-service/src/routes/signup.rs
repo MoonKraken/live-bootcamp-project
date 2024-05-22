@@ -4,9 +4,9 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::app_state::AppState;
+use crate::domain::data_stores::UserStoreError;
 use crate::domain::error::AuthAPIError;
 use crate::domain::user::User;
-use crate::services::hashmap_user_store::UserStoreError;
 
 #[derive(Deserialize, Debug)]
 pub struct SignupRequest {

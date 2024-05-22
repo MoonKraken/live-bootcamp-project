@@ -1,6 +1,9 @@
 use std::sync::Arc;
 use std::sync::RwLock;
-use auth_service::{app_state::{AppState, UserStoreType}, services::hashmap_user_store::HashMapUserStore, Application};
+use auth_service::app_state::UserStoreType;
+use auth_service::services::hashmap_user_store::HashMapUserStore;
+use auth_service::app_state::AppState;
+use auth_service::Application;
 
 #[tokio::main]
 async fn main() {
