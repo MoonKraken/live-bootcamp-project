@@ -1,8 +1,8 @@
 use std::sync::{Arc, RwLock};
 
+use auth_service::app_state::{AppState, UserStoreType};
 use auth_service::services::hashmap_user_store::HashMapUserStore;
 use auth_service::Application;
-use auth_service::app_state::{AppState, UserStoreType};
 use reqwest::Client;
 use uuid::Uuid;
 pub struct TestApp {
@@ -28,12 +28,15 @@ impl TestApp {
         let http_client = Client::new(); // Create a Reqwest http client instance
 
         // Create new `TestApp` instance and return it
-        TestApp { http_client, address }
+        TestApp {
+            http_client,
+            address,
+        }
     }
 
     pub async fn post_signup<Body>(&self, body: &Body) -> reqwest::Response
-        where
-            Body: serde::Serialize,
+    where
+        Body: serde::Serialize,
     {
         self.http_client
             .post(&format!("{}/signup", &self.address))
@@ -86,6 +89,18 @@ impl TestApp {
     pub async fn get_verify_token(&self) -> reqwest::Response {
         self.http_client
             .get(&format!("{}/verify_token", &self.address))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.http_client
+            .post(&format!("{}/login", &self.address))
+            .json(body)
             .send()
             .await
             .expect("Failed to execute request.")

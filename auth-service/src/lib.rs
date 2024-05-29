@@ -31,7 +31,7 @@ impl Application {
         // We don't need it at this point!
         let router = Router::new()
             .route("/hello", get(hello_handler))
-            .route("/login", get(login_handler))
+            .route("/login", post(login_handler))
             .route("/signup", get(signup_handler))
             .route("/signup", post(signup_handler))
             .route("/logout", get(logout_handler))
@@ -62,6 +62,7 @@ impl IntoResponse for AuthAPIError {
         let (status, error_message) = match self {
             AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
             AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
+            AuthAPIError::IncorrectCredentials => (StatusCode::UNAUTHORIZED, "Unauthorized"),
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }
