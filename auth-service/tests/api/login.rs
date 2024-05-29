@@ -1,4 +1,5 @@
 use crate::helpers::{get_random_email, TestApp};
+use auth_service::utils::constants::JWT_COOKIE_NAME;
 use serde_json::json;
 
 #[tokio::test]
@@ -46,4 +47,36 @@ async fn should_return_401_if_incorrect_credentials() {
     let response = app.post_login(&body).await;
 
     assert_eq!(response.status().as_u16(), 401);
+}
+
+#[tokio::test]
+async fn should_return_200_if_correct_credentials() {
+    // Call the log-in route with incorrect credentials and assert
+    // that a 401 HTTP status code is returned along with the appropriate error message.
+    let app = TestApp::new().await;
+    let random_email = get_random_email(); // Call helper method to generate email
+    let test_data = serde_json::json!({
+        "password": "password123",
+        "requires2FA": true,
+        "email": random_email,
+    });
+
+    // first add the user
+    let _ = app.post_signup(&test_data).await; // call `post_signup`
+    let body = json!({
+        "email": random_email,
+        "password": "password123",
+    });
+
+    // the try to authenticate them
+    let response = app.post_login(&body).await;
+
+    assert_eq!(response.status().as_u16(), 200);
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie found");
+
+    assert!(!auth_cookie.value().is_empty());
 }

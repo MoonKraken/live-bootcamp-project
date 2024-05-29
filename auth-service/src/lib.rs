@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 pub mod routes;
 pub mod services;
 pub mod domain;
+pub mod utils;
 use std::error::Error;
 use axum::{response::{Html, IntoResponse, Response}, routing::{get, post}, serve::Serve, Json, Router};
 use domain::error::AuthAPIError;
