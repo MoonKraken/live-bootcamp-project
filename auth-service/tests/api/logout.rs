@@ -13,7 +13,7 @@ use crate::helpers::{get_random_email, TestApp};
 async fn should_return_400_if_jwt_cookie_missing() {
     let app = TestApp::new().await;
 
-    let response = app.get_logout().await;
+    let response = app.post_logout().await;
 
     assert_eq!(response.status().as_u16(), 400);
 }
@@ -31,7 +31,7 @@ async fn should_return_401_if_invalid_token() {
         &Url::parse("http://127.0.0.1").expect("Failed to parse URL"),
     );
 
-    let response = app.get_logout().await;
+    let response = app.post_logout().await;
 
     assert_eq!(response.status().as_u16(), 401);
 }
@@ -47,7 +47,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
         &Url::parse("http://127.0.0.1").expect("Failed to parse URL"),
     );
 
-    let response = app.get_logout().await;
+    let response = app.post_logout().await;
     assert_eq!(response.status().as_u16(), 200);
 
     let banned_store = app.banned_token_store.read().expect("could not get read lock for banned store");
@@ -65,7 +65,7 @@ async fn should_return_400_if_logout_called_twice_in_a_row() {
         &Url::parse("http://127.0.0.1").expect("Failed to parse URL"),
     );
 
-    let _ = app.get_logout().await;
-    let response = app.get_logout().await;
+    let _ = app.post_logout().await;
+    let response = app.post_logout().await;
     assert_eq!(response.status().as_u16(), 400);
 }

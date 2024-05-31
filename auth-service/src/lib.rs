@@ -55,7 +55,7 @@ impl Application {
             .route("/login", post(login_handler))
             .route("/signup", get(signup_handler))
             .route("/signup", post(signup_handler))
-            .route("/logout", get(logout_handler))
+            .route("/logout", post(logout_handler))
             .route("/verify-2fa", get(verify_2fa_handler))
             .route("/verify-token", post(verify_token))
             .with_state(app_state)
