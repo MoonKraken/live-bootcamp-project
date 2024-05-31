@@ -1,16 +1,23 @@
 pub mod app_state;
 use axum::http::StatusCode;
+pub mod domain;
 pub mod routes;
 pub mod services;
-pub mod domain;
 pub mod utils;
-use std::error::Error;
-use axum::{response::{Html, IntoResponse, Response}, routing::{get, post}, serve::Serve, Json, Router};
+use app_state::AppState;
+use axum::{
+    response::{Html, IntoResponse, Response},
+    routing::{get, post},
+    serve::Serve,
+    Json, Router,
+};
 use domain::error::AuthAPIError;
 use routes::*;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 use tower_http::services::ServeDir;
-use app_state::AppState;
+use tower_http::cors::CorsLayer;
+use axum::http::Method;
 
 // This struct encapsulates our application-related logic.
 pub struct Application {
@@ -27,6 +34,19 @@ async fn hello_handler() -> Html<&'static str> {
 
 impl Application {
     pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
+        // Allow the app service(running on our local machine and in production) to call the auth service
+        let allowed_origins = [
+            "http://localhost:8000".parse()?,
+            // TODO: Replace [YOUR_DROPLET_IP] with your Droplet IP address
+            "http://[YOUR_DROPLET_IP]:8000".parse()?,
+        ];
+
+        let cors = CorsLayer::new()
+            // Allow GET and POST requests
+            .allow_methods([Method::GET, Method::POST])
+            // Allow cookies to be included in requests
+            .allow_credentials(true)
+            .allow_origin(allowed_origins);
         // Move the Router definition from `main.rs` to here.
         // Also, remove the `hello` route.
         // We don't need it at this point!
@@ -39,6 +59,7 @@ impl Application {
             .route("/verify_2fa", get(verify_2fa_handler))
             .route("/verify_token", get(verify_token))
             .with_state(app_state)
+            .layer(cors)
             .nest_service("/", ServeDir::new("assets"));
         let listener = tokio::net::TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();
@@ -67,6 +88,8 @@ impl IntoResponse for AuthAPIError {
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }
+            AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid Token"),
+            AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Missing Token"),
         };
         let body = Json(ErrorResponse {
             error: error_message.to_string(),
