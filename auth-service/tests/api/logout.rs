@@ -1,6 +1,4 @@
 use auth_service::{domain::email::Email, utils::{auth::{generate_auth_cookie, Claims}, constants::JWT_COOKIE_NAME}};
-use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header};
 use reqwest::Url;
 
 use crate::helpers::{get_random_email, TestApp};
