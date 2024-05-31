@@ -1,4 +1,10 @@
-use auth_service::{domain::email::Email, utils::{auth::{generate_auth_cookie, Claims}, constants::JWT_COOKIE_NAME}};
+use auth_service::{
+    domain::email::Email,
+    utils::{
+        auth::generate_auth_cookie,
+        constants::JWT_COOKIE_NAME,
+    },
+};
 use reqwest::Url;
 
 use crate::helpers::{get_random_email, TestApp};
@@ -43,6 +49,9 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     let response = app.get_logout().await;
     assert_eq!(response.status().as_u16(), 200);
+
+    let banned_store = app.banned_token_store.read().expect("could not get read lock for banned store");
+    assert!(banned_store.contains_token(&cookie.value().to_string()))
 }
 
 #[tokio::test]

@@ -35,3 +35,20 @@ async fn should_return_401_if_invalid_token() {
 
     assert_eq!(response.status().as_u16(), 401);
 }
+
+#[tokio::test]
+async fn should_return_401_if_banned_token() {
+    let app = TestApp::new().await;
+
+    let email = Email::parse(get_random_email()).expect("email should be parseable");
+    let valid_token = generate_auth_token(&email).expect("should generate token");
+    {
+        let mut banned_store = app.banned_token_store.write().expect("write lock for banned store");
+        banned_store.add_token(valid_token.clone());
+    }
+    let response = app.post_verify_token(&json!({
+        "token": valid_token,
+    })).await;
+
+    assert_eq!(response.status().as_u16(), 401);
+}

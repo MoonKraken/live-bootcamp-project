@@ -30,7 +30,7 @@ pub async fn login_handler(
         return (jar, Err(AuthAPIError::InvalidCredentials))
     };
 
-    let user_store = state.user_store.write().unwrap();
+    let user_store = state.user_store.read().unwrap();
 
     if let Err(_) = user_store.validate_user(&email, &password) {
         return (jar, Err(AuthAPIError::IncorrectCredentials));

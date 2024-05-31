@@ -1,3 +1,4 @@
+pub mod banned_token_store;
 use super::{email::Email, password::Password, user::User};
 
 #[async_trait::async_trait]
