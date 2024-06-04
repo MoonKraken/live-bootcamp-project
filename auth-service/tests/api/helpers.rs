@@ -1,6 +1,8 @@
 use std::sync::{Arc, RwLock};
 
-use auth_service::app_state::{AppState, BannedTokenStoreType, EmailClientType, TwoFACodeStoreType, UserStoreType};
+use auth_service::app_state::{
+    AppState, BannedTokenStoreType, EmailClientType, TwoFACodeStoreType, UserStoreType,
+};
 use auth_service::services::hashmap_two_fa_code_store::HashmapTwoFACodeStore;
 use auth_service::services::hashmap_user_store::HashMapUserStore;
 use auth_service::services::hashset_banned_token_store::HashsetBannedTokenStore;
@@ -27,7 +29,12 @@ impl TestApp {
 
         let email_client: EmailClientType = Arc::new(RwLock::new(MockEmailClient::default()));
         let cookie_jar = Arc::new(Jar::default());
-        let app_state = AppState::new(user_store, banned_token_store.clone(), two_fa_store.clone(), email_client);
+        let app_state = AppState::new(
+            user_store,
+            banned_token_store.clone(),
+            two_fa_store.clone(),
+            email_client,
+        );
         let app = Application::build(app_state, APP_ADDRESS)
             .await
             .expect("Failed to build app");
@@ -132,6 +139,18 @@ impl TestApp {
     {
         self.http_client
             .post(format!("{}/verify-token", &self.address))
+            .json(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn post_verify_2fa<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.http_client
+            .post(format!("{}/verify-2fa", &self.address))
             .json(body)
             .send()
             .await

@@ -62,7 +62,7 @@ pub async fn login_handler(
             match state.two_fa_code_store.write() {
                 Ok(mut two_fa_store) => {
                     if let Err(_) = two_fa_store
-                        .add_code(email.clone(), login_attempt_id.clone(), two_fa_code)
+                        .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
                     {
                         return (jar, Err(AuthAPIError::UnexpectedError));
                     }
@@ -75,7 +75,7 @@ pub async fn login_handler(
 
         match state.email_client.write() {
             Ok(email_client) => {
-                if let Err(_) = email_client.send_email(&email, "login now", "lul time to login!") {
+                if let Err(_) = email_client.send_email(&email, "login now", two_fa_code.as_ref()) {
                     return (jar, Err(AuthAPIError::UnexpectedError));
                 }
             },
@@ -159,7 +159,7 @@ async fn handle_no_2fa(
 
 // The login route can return 2 possible success responses.
 // This enum models each response!
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum LoginResponse {
     RegularAuth,

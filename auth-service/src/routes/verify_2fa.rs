@@ -1,6 +1,79 @@
-use axum::response::IntoResponse;
+use axum::extract::State;
 use axum::http::StatusCode;
-pub async fn verify_2fa_handler() -> impl IntoResponse {
+use axum::{response::IntoResponse, Json};
+use axum_extra::extract::CookieJar;
+use serde::{Deserialize, Serialize};
+
+use crate::app_state::AppState;
+use crate::domain::data_stores::{LoginAttemptId, TwoFACode};
+use crate::domain::error::AuthAPIError;
+use crate::domain::Email;
+use crate::utils::auth::generate_auth_cookie;
+use crate::LoginResponse;
+
+#[derive(Deserialize, Debug)]
+pub struct Verify2FARequest {
+    email: String,
+    #[serde(rename = "loginAttemptId")]
+    login_attempt_id: String,
+    #[serde(rename = "2FACode")]
+    code: String,
+}
+pub async fn verify_2fa_handler(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Json(request): Json<Verify2FARequest>,
+) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
     // Update this to a custom message!
-    StatusCode::OK.into_response()
+    let email = if let Ok(val) = Email::parse(request.email) {
+        val
+    } else {
+        return (jar, Err(AuthAPIError::InvalidCredentials));
+    };
+
+    let code = if let Ok(val) = TwoFACode::parse(request.code) {
+        val
+    } else {
+        return (jar, Err(AuthAPIError::InvalidCredentials));
+    };
+
+    let id = if let Ok(val) = LoginAttemptId::parse(request.login_attempt_id) {
+        val
+    } else {
+        return (jar, Err(AuthAPIError::InvalidCredentials));
+    };
+
+    let mut two_fa_code_store = if let Ok(val) = state.two_fa_code_store.write() {
+        val
+    } else {
+        return (jar, Err(AuthAPIError::UnexpectedError));
+    };
+
+    let entry = if let Ok(val) = two_fa_code_store.get_code(&email) {
+        val
+    } else {
+        return (jar, Err(AuthAPIError::IncorrectCredentials));
+    };
+
+    if entry == (id, code) {
+        let _ = if let Ok(val) = two_fa_code_store.remove_code(&email) {
+            val
+        } else {
+            return (jar, Err(AuthAPIError::InvalidCredentials));
+        };
+
+        let auth_cookie = generate_auth_cookie(&email);
+
+        let auth_cookie = if let Ok(auth_cookie) = auth_cookie {
+            auth_cookie
+        } else {
+            return (jar, Err(AuthAPIError::UnexpectedError));
+        };
+
+        let updated_jar = jar.add(auth_cookie);
+        let response = axum::Json(LoginResponse::RegularAuth);
+        (updated_jar, Ok((StatusCode::OK, response)))
+    } else {
+        (jar, Err(AuthAPIError::IncorrectCredentials))
+    }
 }
