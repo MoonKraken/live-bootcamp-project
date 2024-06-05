@@ -1,4 +1,5 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use auth_service::app_state::{
     AppState, BannedTokenStoreType, EmailClientType, TwoFACodeStoreType, UserStoreType,
@@ -81,21 +82,21 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn get_signup(&self) -> reqwest::Response {
-        self.http_client
-            .get(&format!("{}/signup", &self.address))
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
+    // pub async fn get_signup(&self) -> reqwest::Response {
+    //     self.http_client
+    //         .get(&format!("{}/signup", &self.address))
+    //         .send()
+    //         .await
+    //         .expect("Failed to execute request.")
+    // }
 
-    pub async fn get_login(&self) -> reqwest::Response {
-        self.http_client
-            .get(&format!("{}/login", &self.address))
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
+    // pub async fn get_login(&self) -> reqwest::Response {
+    //     self.http_client
+    //         .get(&format!("{}/login", &self.address))
+    //         .send()
+    //         .await
+    //         .expect("Failed to execute request.")
+    // }
 
     pub async fn post_logout(&self) -> reqwest::Response {
         self.http_client
@@ -105,21 +106,21 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn get_verify_2fa(&self) -> reqwest::Response {
-        self.http_client
-            .get(&format!("{}/verify_2fa", &self.address))
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
+    // pub async fn get_verify_2fa(&self) -> reqwest::Response {
+    //     self.http_client
+    //         .get(&format!("{}/verify_2fa", &self.address))
+    //         .send()
+    //         .await
+    //         .expect("Failed to execute request.")
+    // }
 
-    pub async fn get_verify_token(&self) -> reqwest::Response {
-        self.http_client
-            .get(&format!("{}/verify_token", &self.address))
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
+    // pub async fn get_verify_token(&self) -> reqwest::Response {
+    //     self.http_client
+    //         .get(&format!("{}/verify_token", &self.address))
+    //         .send()
+    //         .await
+    //         .expect("Failed to execute request.")
+    // }
 
     pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response
     where

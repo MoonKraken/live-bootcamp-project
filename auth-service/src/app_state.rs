@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::sync::RwLock;
+use tokio::sync::RwLock;
 
 use crate::domain::data_stores::banned_token_store::BannedTokenStore;
 use crate::domain::data_stores::TwoFACodeStore;

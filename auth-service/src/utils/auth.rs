@@ -74,7 +74,7 @@ pub async fn validate_token(
     {
         let banned_store_read_lock = banned_token_store
             .read()
-            .map_err(|_| TokenValidationError::IssueWithBannedStore)?;
+            .await;
 
         if banned_store_read_lock.contains_token(token) {
             return Err(TokenValidationError::BannedToken);
@@ -107,7 +107,8 @@ pub struct Claims {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, RwLock};
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
 
     use crate::services::hashset_banned_token_store::HashsetBannedTokenStore;
 
@@ -146,7 +147,8 @@ mod tests {
     async fn test_validate_token_with_valid_token() {
         let email = Email::parse("test@example.com".to_owned()).unwrap();
         let token = generate_auth_token(&email).unwrap();
-        let banned_token_store: BannedTokenStoreType = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+        let banned_token_store: BannedTokenStoreType =
+            Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         let result = validate_token(&token, &banned_token_store).await.unwrap();
         assert_eq!(result.sub, "test@example.com");
 
@@ -161,7 +163,8 @@ mod tests {
     #[tokio::test]
     async fn test_validate_token_with_invalid_token() {
         let token = "invalid_token".to_owned();
-        let banned_token_store: BannedTokenStoreType = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+        let banned_token_store: BannedTokenStoreType =
+            Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         let result = validate_token(&token, &banned_token_store).await;
         assert!(result.is_err());
     }

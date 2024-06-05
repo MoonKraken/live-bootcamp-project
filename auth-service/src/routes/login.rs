@@ -32,13 +32,7 @@ pub async fn login_handler(
         return (jar, Err(AuthAPIError::InvalidCredentials));
     };
 
-    let user_store = state.user_store.read();
-
-    let user_store = if let Ok(user_store) = user_store {
-        user_store
-    } else {
-        return (jar, Err(AuthAPIError::UnexpectedError));
-    };
+    let user_store = state.user_store.read().await;
 
     if let Err(_) = user_store.validate_user(&email, &password) {
         return (jar, Err(AuthAPIError::IncorrectCredentials));
@@ -59,27 +53,17 @@ pub async fn login_handler(
         let two_fa_code = TwoFACode::default();
 
         {
-            match state.two_fa_code_store.write() {
-                Ok(mut two_fa_store) => {
-                    if let Err(_) = two_fa_store
-                        .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
-                    {
-                        return (jar, Err(AuthAPIError::UnexpectedError));
-                    }
-                }
-                Err(_) => {
-                    return (jar, Err(AuthAPIError::UnexpectedError));
-                }
+            let mut two_fa_store = state.two_fa_code_store.write().await;
+            if let Err(_) = two_fa_store
+                .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
+            {
+                return (jar, Err(AuthAPIError::UnexpectedError));
             }
         }
 
-        match state.email_client.write() {
-            Ok(email_client) => {
-                if let Err(_) = email_client.send_email(&email, "login now", two_fa_code.as_ref()) {
-                    return (jar, Err(AuthAPIError::UnexpectedError));
-                }
-            },
-            Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+        let email_client = state.email_client.write().await;
+        if let Err(_) = email_client.send_email(&email, "login now", two_fa_code.as_ref()) {
+            return (jar, Err(AuthAPIError::UnexpectedError));
         }
 
         let two_factor_response = TwoFactorAuthResponse {
@@ -108,54 +92,54 @@ pub async fn login_handler(
     }
 }
 // New!
-async fn handle_2fa(
-    jar: CookieJar,
-) -> (
-    CookieJar,
-    Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
-) {
-    // let auth_cookie = generate_auth_cookie(&email);
+// async fn handle_2fa(
+//     jar: CookieJar,
+// ) -> (
+//     CookieJar,
+//     Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
+// ) {
+//     // let auth_cookie = generate_auth_cookie(&email);
 
-    // let auth_cookie = if let Ok(auth_cookie) = auth_cookie {
-    //     auth_cookie
-    // } else {
-    //     return (jar, Err(AuthAPIError::UnexpectedError));
-    // };
+//     // let auth_cookie = if let Ok(auth_cookie) = auth_cookie {
+//     //     auth_cookie
+//     // } else {
+//     //     return (jar, Err(AuthAPIError::UnexpectedError));
+//     // };
 
-    // let updated_jar = jar.add(auth_cookie);
-    let two_factor_response = TwoFactorAuthResponse {
-        message: "2FA required".to_string(),
-        login_attempt_id: "123456".to_string(),
-    };
-    (
-        jar,
-        Ok((
-            StatusCode::OK,
-            axum::Json(LoginResponse::TwoFactorAuth(two_factor_response)),
-        )),
-    )
-}
+//     // let updated_jar = jar.add(auth_cookie);
+//     let two_factor_response = TwoFactorAuthResponse {
+//         message: "2FA required".to_string(),
+//         login_attempt_id: "123456".to_string(),
+//     };
+//     (
+//         jar,
+//         Ok((
+//             StatusCode::OK,
+//             axum::Json(LoginResponse::TwoFactorAuth(two_factor_response)),
+//         )),
+//     )
+// }
 
 // New!
-async fn handle_no_2fa(
-    email: &Email,
-    jar: CookieJar,
-) -> (
-    CookieJar,
-    Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
-) {
-    let auth_cookie = generate_auth_cookie(&email);
+// async fn handle_no_2fa(
+//     email: &Email,
+//     jar: CookieJar,
+// ) -> (
+//     CookieJar,
+//     Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
+// ) {
+//     let auth_cookie = generate_auth_cookie(&email);
 
-    let auth_cookie = if let Ok(auth_cookie) = auth_cookie {
-        auth_cookie
-    } else {
-        return (jar, Err(AuthAPIError::UnexpectedError));
-    };
+//     let auth_cookie = if let Ok(auth_cookie) = auth_cookie {
+//         auth_cookie
+//     } else {
+//         return (jar, Err(AuthAPIError::UnexpectedError));
+//     };
 
-    let updated_jar = jar.add(auth_cookie);
-    let response = axum::Json(LoginResponse::RegularAuth);
-    (updated_jar, Ok((StatusCode::OK, response)))
-}
+//     let updated_jar = jar.add(auth_cookie);
+//     let response = axum::Json(LoginResponse::RegularAuth);
+//     (updated_jar, Ok((StatusCode::OK, response)))
+// }
 
 // The login route can return 2 possible success responses.
 // This enum models each response!

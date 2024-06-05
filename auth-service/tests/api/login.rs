@@ -106,8 +106,8 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     assert_eq!(json_body.message, "2FA required".to_owned());
 
-    let id = json_body.login_attempt_id;
-    let two_fa_stuff = app.two_fa_store.read().expect("should get read lock");
+    // let id = json_body.login_attempt_id;
+    let two_fa_stuff = app.two_fa_store.read().await;
     match two_fa_stuff.get_code(&Email::parse(random_email).expect("parse email")) {
         Ok((_, _)) => {},
         Err(_) => {

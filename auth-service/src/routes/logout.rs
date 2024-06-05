@@ -28,7 +28,7 @@ pub async fn logout_handler(
     let jar = jar.remove(Cookie::from(JWT_COOKIE_NAME));
 
     //add to the banned list
-    let mut banned_token_store = state.banned_token_store.write().unwrap();
+    let mut banned_token_store = state.banned_token_store.write().await;
     banned_token_store.add_token(token);
 
     (jar, Ok(StatusCode::OK))

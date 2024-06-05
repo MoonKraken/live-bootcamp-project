@@ -10,8 +10,7 @@ pub struct HashmapTwoFACodeStore {
     codes: HashMap<Email, (LoginAttemptId, TwoFACode)>,
 }
 
-// TODO: implement TwoFACodeStore for HashmapTwoFACodeStore
-
+// #[async_trait]
 impl TwoFACodeStore for HashmapTwoFACodeStore {
     fn add_code(
         &mut self,
@@ -38,6 +37,7 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
     use crate::domain::{data_stores::{LoginAttemptId, TwoFACode, TwoFACodeStore}, email::Email};

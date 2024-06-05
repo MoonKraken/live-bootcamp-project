@@ -1,4 +1,3 @@
-// use async_trait::async_trait;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

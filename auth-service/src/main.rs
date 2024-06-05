@@ -10,7 +10,7 @@ use auth_service::services::mock_email_client::MockEmailClient;
 use auth_service::utils::constants::prod;
 use auth_service::Application;
 use std::sync::Arc;
-use std::sync::RwLock;
+use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {

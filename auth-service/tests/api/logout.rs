@@ -50,7 +50,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
     let response = app.post_logout().await;
     assert_eq!(response.status().as_u16(), 200);
 
-    let banned_store = app.banned_token_store.read().expect("could not get read lock for banned store");
+    let banned_store = app.banned_token_store.read().await;
     assert!(banned_store.contains_token(&cookie.value().to_string()))
 }
 

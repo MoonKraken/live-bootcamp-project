@@ -31,7 +31,7 @@ pub async fn signup_handler(
         return Err(AuthAPIError::InvalidCredentials);
     }
     // Create a new `User` instance using data in the `request`
-    let mut user_store = state.user_store.write().unwrap();
+    let mut user_store = state.user_store.write().await;
 
     let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
