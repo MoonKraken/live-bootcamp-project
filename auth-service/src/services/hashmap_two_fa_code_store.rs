@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use async_trait::async_trait;
+
 use crate::domain::{
     data_stores::{LoginAttemptId, TwoFACode, TwoFACodeStore, TwoFACodeStoreError},
     email::Email,
@@ -10,9 +12,9 @@ pub struct HashmapTwoFACodeStore {
     codes: HashMap<Email, (LoginAttemptId, TwoFACode)>,
 }
 
-// #[async_trait]
+#[async_trait]
 impl TwoFACodeStore for HashmapTwoFACodeStore {
-    fn add_code(
+    async fn add_code(
         &mut self,
         email: Email,
         login_attempt_id: LoginAttemptId,
@@ -22,12 +24,12 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
         Ok(())
     }
 
-    fn remove_code(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError> {
+    async fn remove_code(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError> {
         self.codes.remove(email);
         Ok(())
     }
 
-    fn get_code(
+    async fn get_code(
         &self,
         email: &Email,
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError> {
@@ -48,7 +50,7 @@ mod tests {
     async fn should_add_code() {
         let email = Email::parse("ken@cttm.io".to_string()).expect("email should be parsed");
         let mut store = HashmapTwoFACodeStore::default();
-        let res = store.add_code(email, LoginAttemptId::default(), TwoFACode::default());
+        let res = store.add_code(email, LoginAttemptId::default(), TwoFACode::default()).await;
         assert_eq!(res, Ok(()));
     }
 }

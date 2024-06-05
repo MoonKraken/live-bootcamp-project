@@ -55,7 +55,7 @@ pub async fn login_handler(
         {
             let mut two_fa_store = state.two_fa_code_store.write().await;
             if let Err(_) = two_fa_store
-                .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
+                .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone()).await
             {
                 return (jar, Err(AuthAPIError::UnexpectedError));
             }

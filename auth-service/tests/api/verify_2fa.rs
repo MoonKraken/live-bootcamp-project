@@ -111,7 +111,7 @@ async fn should_return_401_if_old_code() {
     let _ = app.post_login(&login_request).await;
 
     let email = Email::parse(random_email.clone()).unwrap();
-    let first_code = app.two_fa_store.read().await.get_code(&email).unwrap().1;
+    let first_code = app.two_fa_store.read().await.get_code(&email).await.unwrap().1;
 
     // second login attempt, the code we just grabbed shoudl be invalidated
     let login_res = app.post_login(&login_request).await;
@@ -166,7 +166,7 @@ async fn should_return_200_if_correct_code() {
         .await
         .expect("Could not deserialize response body to LoginResponse");
 
-    let code = app.two_fa_store.read().await.get_code(&email).unwrap().1;
+    let code = app.two_fa_store.read().await.get_code(&email).await.unwrap().1;
     match login_response_json {
         LoginResponse::TwoFactorAuth(two_fa_respons) => {
             // let code = app.two_fa_store.read().unwrap().get_code(&email).unwrap();
@@ -221,7 +221,7 @@ async fn should_return_401_if_same_code_twice() {
         .await
         .expect("Could not deserialize response body to LoginResponse");
 
-    let code = app.two_fa_store.read().await.get_code(&email).unwrap().1;
+    let code = app.two_fa_store.read().await.get_code(&email).await.unwrap().1;
     match login_response_json {
         LoginResponse::TwoFactorAuth(two_fa_respons) => {
             // let code = app.two_fa_store.read().unwrap().get_code(&email).unwrap();

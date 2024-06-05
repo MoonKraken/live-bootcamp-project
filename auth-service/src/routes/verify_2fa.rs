@@ -45,14 +45,14 @@ pub async fn verify_2fa_handler(
 
     let mut two_fa_code_store = state.two_fa_code_store.write().await;
 
-    let entry = if let Ok(val) = two_fa_code_store.get_code(&email) {
+    let entry = if let Ok(val) = two_fa_code_store.get_code(&email).await {
         val
     } else {
         return (jar, Err(AuthAPIError::IncorrectCredentials));
     };
 
     if entry == (id, code) {
-        let _ = if let Ok(val) = two_fa_code_store.remove_code(&email) {
+        let _ = if let Ok(val) = two_fa_code_store.remove_code(&email).await {
             val
         } else {
             return (jar, Err(AuthAPIError::InvalidCredentials));
