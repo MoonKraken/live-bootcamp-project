@@ -42,7 +42,7 @@ pub async fn signup_handler(
         email,
         password,
         requires_2fa: request.requires_2fa,
-    });
+    }).await;
 
     if let Err(e) = add_res {
         if e == UserStoreError::UserAlreadyExists {

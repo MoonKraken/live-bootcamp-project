@@ -34,11 +34,11 @@ pub async fn login_handler(
 
     let user_store = state.user_store.read().await;
 
-    if let Err(_) = user_store.validate_user(&email, &password) {
+    if let Err(_) = user_store.validate_user(&email, &password).await {
         return (jar, Err(AuthAPIError::IncorrectCredentials));
     }
 
-    let user = user_store.get_user(&email);
+    let user = user_store.get_user(&email).await;
 
     let user = if let Ok(user) = user {
         user
@@ -55,7 +55,8 @@ pub async fn login_handler(
         {
             let mut two_fa_store = state.two_fa_code_store.write().await;
             if let Err(_) = two_fa_store
-                .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone()).await
+                .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
+                .await
             {
                 return (jar, Err(AuthAPIError::UnexpectedError));
             }

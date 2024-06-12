@@ -13,8 +13,9 @@ pub struct HashMapUserStore {
     users: HashMap<Email, User>,
 }
 
+#[async_trait::async_trait]
 impl UserStore for HashMapUserStore {
-    fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
+    async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
         // Return `UserStoreError::UserAlreadyExists` if the user already exists,
         // otherwise insert the user into the hashmap and return `Ok(())`.
         if self.users.contains_key(&user.email) {
@@ -31,7 +32,7 @@ impl UserStore for HashMapUserStore {
     // `User` object or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
 
-    fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
+    async fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
         match self.users.get(email) {
             Some(user) => Ok(user.clone()),
             _ => Err(UserStoreError::UserNotFound),
@@ -44,7 +45,7 @@ impl UserStore for HashMapUserStore {
     // Return `UserStoreError::UserNotFound` if the user can not be found.
     // Return `UserStoreError::InvalidCredentials` if the password is incorrect.
 
-    fn validate_user(&self, email: &Email, password: &Password) -> Result<(), UserStoreError> {
+    async fn validate_user(&self, email: &Email, password: &Password) -> Result<(), UserStoreError> {
         match self.users.get(email) {
             Some(user) => {
                 if &user.password == password {
@@ -73,7 +74,7 @@ mod tests {
             requires_2fa: false,
         };
 
-        let res = test_store.add_user(test_user);
+        let res = test_store.add_user(test_user).await;
 
         assert_eq!(res, Ok(()));
     }
@@ -89,9 +90,9 @@ mod tests {
             requires_2fa: false,
         };
 
-        let _ = test_store.add_user(test_user.clone());
+        let _ = test_store.add_user(test_user.clone()).await;
 
-        let get_res = test_store.get_user(&email);
+        let get_res = test_store.get_user(&email).await;
 
         assert_eq!(get_res, Ok(test_user));
     }
@@ -107,9 +108,9 @@ mod tests {
             requires_2fa: false,
         };
 
-        let _ = test_store.add_user(test_user.clone());
+        let _ = test_store.add_user(test_user.clone()).await;
 
-        let validate_res = test_store.validate_user(&test_user.email, &test_user.password);
+        let validate_res = test_store.validate_user(&test_user.email, &test_user.password).await;
 
         assert_eq!(validate_res, Ok(()));
     }

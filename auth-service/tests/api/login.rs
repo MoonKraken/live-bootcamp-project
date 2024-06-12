@@ -40,7 +40,7 @@ async fn should_return_401_if_incorrect_credentials() {
     // that a 401 HTTP status code is returned along with the appropriate error message.
     let app = TestApp::new().await;
     let body = json!({
-        "email": "ken@cttm.io",
+        "email": get_random_email(),
         "password": "owiejfwoiejfoij",
     });
 
@@ -62,7 +62,9 @@ async fn should_return_200_if_correct_credentials() {
     });
 
     // first add the user
-    let _ = app.post_signup(&test_data).await; // call `post_signup`
+    let response = app.post_signup(&test_data).await; // call `post_signup`
+    assert_eq!(response.status().as_u16(), 201, "failed to add user prior to login test");
+
     let body = json!({
         "email": random_email,
         "password": "password123",

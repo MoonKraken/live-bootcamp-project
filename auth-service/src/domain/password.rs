@@ -1,5 +1,5 @@
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
-pub struct Password(String);
+pub struct Password(pub String);
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct PasswordError(String);

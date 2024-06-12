@@ -1,5 +1,5 @@
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
-pub struct Email(String);
+pub struct Email(pub String);
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct EmailError(String);

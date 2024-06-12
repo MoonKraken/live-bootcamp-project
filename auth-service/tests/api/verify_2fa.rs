@@ -24,17 +24,17 @@ async fn should_return_400_if_invalid_input() {
 
     let invalid_inputs = vec![
         json!({
-            "email": "ken@cttm.io",
+            "email": get_random_email(),
             "loginAttemptId": "oij",
             "2FACode": TwoFACode::default(),
         }),
         json!({
-            "email": "ken@cttm.io",
+            "email": get_random_email(),
             "loginAttemptId": LoginAttemptId::default(),
             "2FACode": "12",
         }),
         json!({
-            "email": "wf",
+            "email": "",
             "loginAttemptId": LoginAttemptId::default(),
             "2FACode": TwoFACode::default(),
         }),
