@@ -5,6 +5,28 @@ on:
     branches:
       - main
 
+env:
+  SQLX_OFFLINE: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15.2-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+      # New!
+      redis:
+        image: redis:7.0-alpine
+        ports:
+          - 6379:6379
+
 jobs:
   build:
     runs-on: ubuntu-latest

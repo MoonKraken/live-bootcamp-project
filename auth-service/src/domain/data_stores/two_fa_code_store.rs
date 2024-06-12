@@ -28,7 +28,7 @@ pub enum TwoFACodeStoreError {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct LoginAttemptId(String);
+pub struct LoginAttemptId(pub String);
 
 impl LoginAttemptId {
     pub fn parse(id: String) -> Result<Self, String> {
@@ -55,7 +55,7 @@ impl AsRef<str> for LoginAttemptId {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct TwoFACode(String);
+pub struct TwoFACode(pub String);
 
 impl TwoFACode {
     pub fn parse(code: String) -> Result<Self, String> {
