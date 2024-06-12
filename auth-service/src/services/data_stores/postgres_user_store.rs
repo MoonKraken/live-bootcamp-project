@@ -25,7 +25,7 @@ impl PostgresUserStore {
 #[async_trait::async_trait]
 impl UserStore for PostgresUserStore {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        let res = sqlx::query("INSERT INTO users VALUES ($1, $2, $3)")
+        let _ = sqlx::query("INSERT INTO users VALUES ($1, $2, $3)")
             .bind(user.email.as_ref())
             .bind(
                 compute_password_hash(user.password.as_ref())

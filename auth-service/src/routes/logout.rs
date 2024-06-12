@@ -29,7 +29,9 @@ pub async fn logout_handler(
 
     //add to the banned list
     let mut banned_token_store = state.banned_token_store.write().await;
-    banned_token_store.add_token(token);
+    match banned_token_store.add_token(token).await {
+        Ok(()) => (jar, Ok(StatusCode::OK)),
+        _ => (jar, Err(AuthAPIError::UnexpectedError))
+    }
 
-    (jar, Ok(StatusCode::OK))
 }

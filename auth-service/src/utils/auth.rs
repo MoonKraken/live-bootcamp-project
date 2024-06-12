@@ -72,12 +72,11 @@ pub async fn validate_token(
     banned_token_store: &BannedTokenStoreType,
 ) -> Result<Claims, TokenValidationError> {
     {
-        let banned_store_read_lock = banned_token_store
-            .read()
-            .await;
+        let banned_store_read_lock = banned_token_store.read().await;
 
-        if banned_store_read_lock.contains_token(token) {
-            return Err(TokenValidationError::BannedToken);
+        match banned_store_read_lock.contains_token(token).await {
+            Ok(true) => return Err(TokenValidationError::BannedToken),
+            _ => {}
         }
     }
 
@@ -149,7 +148,10 @@ mod tests {
         let token = generate_auth_token(&email).unwrap();
         let banned_token_store: BannedTokenStoreType =
             Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
-        let result = validate_token(&token, &banned_token_store).await.unwrap();
+        let result = validate_token(&token, &banned_token_store)
+            .await
+            .expect("issue validating token");
+
         assert_eq!(result.sub, "test@example.com");
 
         let exp = Utc::now()

@@ -1,8 +1,10 @@
-pub enum BannedTokenError {
+pub enum BannedTokenStoreError {
     AddFailure,
+    UnexpectedError,
 }
 
+#[async_trait::async_trait]
 pub trait BannedTokenStore {
-    fn add_token(&mut self, token: String) -> ();
-    fn contains_token(&self, token: &str) -> bool;
+    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError>;
+    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError>;
 }

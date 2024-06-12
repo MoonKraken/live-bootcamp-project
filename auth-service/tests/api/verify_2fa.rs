@@ -12,15 +12,16 @@ use crate::helpers::{get_random_email, TestApp};
 async fn should_return_422_if_malformed_input() {
     // Call the log-in route with incorrect credentials and assert
     // that a 401 HTTP status code is returned along with the appropriate error message.
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let response = app.post_verify_2fa(&json!({})).await;
     assert_eq!(response.status().as_u16(), 422);
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let invalid_inputs = vec![
         json!({
@@ -44,11 +45,13 @@ async fn should_return_400_if_invalid_input() {
         let res = app.post_verify_2fa(&input).await;
         assert_eq!(res.status().as_u16(), 400);
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email(); // Call helper method to generate email
     let user_to_create = serde_json::json!({
@@ -87,12 +90,14 @@ async fn should_return_401_if_incorrect_credentials() {
         }
         _ => panic!("two factor auth response expected, did not get one"),
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_old_code() {
     // Call login twice. Then, attempt to call verify-fa with the 2FA code from the first login requet. This should fail.
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email(); // Call helper method to generate email
     let user_to_create = serde_json::json!({
@@ -135,12 +140,14 @@ async fn should_return_401_if_old_code() {
         }
         _ => panic!("two factor auth response expected, did not get one"),
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_200_if_correct_code() {
     // Make sure to assert the auth cookie gets set
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email(); // Call helper method to generate email
     let user_to_create = serde_json::json!({
@@ -190,12 +197,14 @@ async fn should_return_200_if_correct_code() {
         }
         _ => panic!("two factor auth response expected, did not get one"),
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_same_code_twice() {
     // Make sure to assert the auth cookie gets set
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email(); // Call helper method to generate email
     let user_to_create = serde_json::json!({
@@ -255,4 +264,6 @@ async fn should_return_401_if_same_code_twice() {
         }
         _ => panic!("two factor auth response expected, did not get one"),
     }
+
+    app.clean_up().await;
 }
