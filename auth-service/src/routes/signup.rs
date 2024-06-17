@@ -48,6 +48,8 @@ pub async fn signup_handler(
     if let Err(e) = add_res {
         if e == UserStoreError::UserAlreadyExists {
             return Err(AuthAPIError::UserAlreadyExists);
+        } else {
+            return Err(AuthAPIError::UnexpectedError(e.into()));
         }
     }
 

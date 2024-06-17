@@ -1,7 +1,7 @@
 pub mod app_state;
+use axum::http::StatusCode;
 use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 use utils::tracing::{make_span_with_request_id, on_request, on_response};
-use axum::http::StatusCode;
 pub mod domain;
 pub mod routes;
 pub mod services;
@@ -54,11 +54,11 @@ impl Application {
         // We don't need it at this point!
         let router = Router::new()
             .route("/hello", get(hello_handler))
-            .route("/login", post(login_handler))
+            // .route("/login", post(login_handler))
             .route("/signup", get(signup_handler))
             .route("/signup", post(signup_handler))
-            .route("/logout", post(logout_handler))
-            .route("/verify-2fa", post(verify_2fa_handler))
+            // .route("/logout", post(logout_handler))
+            // .route("/verify-2fa", post(verify_2fa_handler))
             .route("/verify-token", post(verify_token))
             .with_state(app_state)
             .layer(cors)
@@ -93,21 +93,39 @@ pub struct ErrorResponse {
 
 impl IntoResponse for AuthAPIError {
     fn into_response(self) -> Response {
+        log_error_chain(&self);
         let (status, error_message) = match self {
             AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
             AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
-            AuthAPIError::IncorrectCredentials => (StatusCode::UNAUTHORIZED, "Unauthorized"),
-            AuthAPIError::UnexpectedError => {
+            AuthAPIError::IncorrectCredentials => {
+                (StatusCode::UNAUTHORIZED, "Incorrect credentials")
+            }
+            AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Missing auth token"),
+            AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid auth token"),
+            AuthAPIError::UnexpectedError(_) => {
+                // Updated!
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }
-            AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid Token"),
-            AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Missing Token"),
         };
         let body = Json(ErrorResponse {
             error: error_message.to_string(),
         });
         (status, body).into_response()
     }
+}
+
+fn log_error_chain(e: &(dyn Error + 'static)) {
+    let separator =
+        "\n-----------------------------------------------------------------------------------\n";
+    let mut report = format!("{}{:?}\n", separator, e);
+    let mut current = e.source();
+    while let Some(cause) = current {
+        let str = format!("Caused by:\n\n{:?}", cause);
+        report = format!("{}\n{}", report, str);
+        current = cause.source();
+    }
+    report = format!("{}\n{}", report, separator);
+    tracing::error!("{}", report);
 }
 
 pub async fn get_postgres_pool(url: &str) -> Result<PgPool, sqlx::Error> {

@@ -20,15 +20,17 @@ use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
-    init_tracing();
+    color_eyre::install().expect("Failed to install color_eyre");
+    init_tracing().expect("Failed to initialize tracing");
     // We will use this PostgreSQL pool in the next task!
     let pg_pool = configure_postgresql().await;
     let user_store: UserStoreType = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
-    let redis_connection =
-        Arc::new(RwLock::new(configure_redis()));
-    let banned_token_store: BannedTokenStoreType =
-        Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_connection.clone())));
-    let two_fa_store: TwoFACodeStoreType = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_connection)));
+    let redis_connection = Arc::new(RwLock::new(configure_redis()));
+    let banned_token_store: BannedTokenStoreType = Arc::new(RwLock::new(
+        RedisBannedTokenStore::new(redis_connection.clone()),
+    ));
+    let two_fa_store: TwoFACodeStoreType =
+        Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_connection)));
     let email_client: EmailClientType = Arc::new(RwLock::new(MockEmailClient::default()));
     let app_state = AppState::new(user_store, banned_token_store, two_fa_store, email_client);
     let app = Application::build(app_state, prod::APP_ADDRESS)
