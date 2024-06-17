@@ -12,6 +12,7 @@ use auth_service::services::mock_email_client::MockEmailClient;
 use auth_service::utils::constants::prod;
 use auth_service::utils::constants::DATABASE_URL;
 use auth_service::utils::constants::REDIS_HOST_NAME;
+use auth_service::utils::tracing::init_tracing;
 use auth_service::Application;
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -19,6 +20,7 @@ use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
+    init_tracing();
     // We will use this PostgreSQL pool in the next task!
     let pg_pool = configure_postgresql().await;
     let user_store: UserStoreType = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
