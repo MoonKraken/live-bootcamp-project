@@ -1,6 +1,9 @@
+use color_eyre::eyre::Report;
+use thiserror::Error;
+#[derive(Debug, Error)]
 pub enum BannedTokenStoreError {
-    AddFailure,
-    UnexpectedError,
+    #[error("Unexpected error")]
+    UnexpectedError(#[source] Report),
 }
 
 #[async_trait::async_trait]

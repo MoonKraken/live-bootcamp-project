@@ -3,6 +3,8 @@ use axum_extra::extract::{cookie::Cookie, CookieJar};
 use axum::http::StatusCode;
 
 use crate::{app_state::AppState, domain::error::AuthAPIError, utils::{auth::validate_token, constants::JWT_COOKIE_NAME}};
+
+#[tracing::instrument(name = "Verify 2FA", skip_all)]
 pub async fn logout_handler(
     State(state): State<AppState>,
     jar: CookieJar,
@@ -13,10 +15,6 @@ pub async fn logout_handler(
         Some(cookie) => cookie.value().to_owned(),
         None => return (jar, Err(AuthAPIError::MissingToken)),
     };
-
-    // TODO: Validate JWT token by calling `validate_token` from the auth service.
-    // If the token is valid you can ignore the returned claims for now.
-    // Return AuthAPIError::InvalidToken is validation fails.
 
     let validation = validate_token(&token, &state.banned_token_store).await;
     match validation {
@@ -31,7 +29,6 @@ pub async fn logout_handler(
     let mut banned_token_store = state.banned_token_store.write().await;
     match banned_token_store.add_token(token).await {
         Ok(()) => (jar, Ok(StatusCode::OK)),
-        _ => (jar, Err(AuthAPIError::UnexpectedError))
+        Err(e) => (jar, Err(AuthAPIError::UnexpectedError(e.into())))
     }
-
 }

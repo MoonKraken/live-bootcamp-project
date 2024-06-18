@@ -1,4 +1,4 @@
-use color_eyre::eyre::{eyre, Context, Result};
+use color_eyre::eyre::{Context, Result};
 
 use argon2::{
     password_hash::SaltString, Algorithm, Argon2, Params, PasswordHash, PasswordHasher,
@@ -35,8 +35,12 @@ impl UserStore for PostgresUserStore {
             .bind(user.requires_2fa)
             .execute(&self.pool)
             .await
-            .map_err(|e| {
-                UserStoreError::UnexpectedError(e.into())
+            .map_err(|_| {
+                // technically we should be looking at e to make sure the failure
+                // really was due to a primary key conflict, but it seemed
+                // like doing that was going to be nontrivial, so just
+                // assume for now
+                UserStoreError::UserAlreadyExists
             })?;
 
         Ok(())

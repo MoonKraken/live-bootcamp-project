@@ -21,6 +21,7 @@ impl RedisTwoFACodeStore {
 
 #[async_trait::async_trait]
 impl TwoFACodeStore for RedisTwoFACodeStore {
+    #[tracing::instrument(name = "Add Two FA Code", skip_all)]
     async fn add_code(
         &mut self,
         email: Email,
@@ -38,17 +39,21 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
         // Return TwoFACodeStoreError::UnexpectedError if casting fails or the call to set_ex fails.
 
         let key = get_key(&email);
-        let tuple = TwoFATuple(login_attempt_id.as_ref().to_string(), code.as_ref().to_string());
+        let tuple = TwoFATuple(
+            login_attempt_id.as_ref().to_string(),
+            code.as_ref().to_string(),
+        );
         let mut write_lock = self.conn.write().await;
-        let json_string =
-            serde_json::to_string(&tuple).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+        let json_string = serde_json::to_string(&tuple)
+            .map_err(|e| TwoFACodeStoreError::UnexpectedError(e.into()))?;
         write_lock
             .set_ex(key, json_string, TEN_MINUTES_IN_SECONDS)
-            .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+            .map_err(|e| TwoFACodeStoreError::UnexpectedError(e.into()))?;
 
         Ok(())
     }
 
+    #[tracing::instrument(name = "Remove Two FA Code", skip_all)]
     async fn remove_code(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError> {
         // TODO:
         // 1. Create a new key using the get_key helper function.
@@ -59,10 +64,11 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
         let mut write_lock = self.conn.write().await;
         write_lock
             .del(key)
-            .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+            .map_err(|e| TwoFACodeStoreError::UnexpectedError(e.into()))?;
         Ok(())
     }
 
+    #[tracing::instrument(name = "Get Two FA Code", skip_all)]
     async fn get_code(
         &self,
         email: &Email,
@@ -77,11 +83,12 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
 
         let key = get_key(&email);
         let mut write_lock = self.conn.write().await;
-        let val: String = write_lock.get(key)
+        let val: String = write_lock
+            .get(key)
             .map_err(|_| TwoFACodeStoreError::LoginAttemptIdNotFound)?;
 
         let val: TwoFATuple = serde_json::from_str(&val)
-            .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+            .map_err(|e| TwoFACodeStoreError::UnexpectedError(e.into()))?;
 
         Ok((LoginAttemptId(val.0), TwoFACode(val.1)))
     }

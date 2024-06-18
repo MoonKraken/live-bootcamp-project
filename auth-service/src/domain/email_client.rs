@@ -1,12 +1,13 @@
 use super::Email;
 
+use color_eyre::Result;
 // This trait represents the interface all concrete email clients should implement
-// #[async_trait::async_trait]
+#[async_trait::async_trait]
 pub trait EmailClient {
-    fn send_email(
+    async fn send_email(
         &self,
         recipient: &Email,
         subject: &str,
         content: &str,
-    ) -> Result<(), String>;
+    ) -> Result<()>;
 }

@@ -1,6 +1,5 @@
 use color_eyre::eyre::Report;
 use thiserror::Error;
-use rand::Rng;
 // use color_eyre::eyre::{eyre, Context, Result};
 use crate::domain::{password::Password, user::User, Email};
 

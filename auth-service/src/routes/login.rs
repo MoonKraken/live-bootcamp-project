@@ -18,6 +18,7 @@ pub struct LoginRequest {
     password: String,
 }
 
+#[tracing::instrument(name = "Login", skip_all)]
 pub async fn login_handler(
     State(state): State<AppState>,
     jar: CookieJar,
@@ -46,101 +47,77 @@ pub async fn login_handler(
         return (jar, Err(AuthAPIError::IncorrectCredentials));
     };
 
-    // TODO figure out why I couldn't put each of these branches in a function
-    // they give me type errors in lib.rs when i do so
     if user.requires_2fa {
-        let login_attempt_id = LoginAttemptId::default();
-        let two_fa_code = TwoFACode::default();
-
-        {
-            let mut two_fa_store = state.two_fa_code_store.write().await;
-            if let Err(_) = two_fa_store
-                .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
-                .await
-            {
-                return (jar, Err(AuthAPIError::UnexpectedError));
-            }
-        }
-
-        let email_client = state.email_client.write().await;
-        if let Err(_) = email_client.send_email(&email, "login now", two_fa_code.as_ref()) {
-            return (jar, Err(AuthAPIError::UnexpectedError));
-        }
-
-        let two_factor_response = TwoFactorAuthResponse {
-            message: "2FA required".to_string(),
-            login_attempt_id: login_attempt_id.as_ref().to_string(),
-        };
-        (
-            jar,
-            Ok((
-                StatusCode::PARTIAL_CONTENT,
-                axum::Json(LoginResponse::TwoFactorAuth(two_factor_response)),
-            )),
-        )
+        handle_2fa(jar, state.clone(), email).await
     } else {
-        let auth_cookie = generate_auth_cookie(&email);
-
-        let auth_cookie = if let Ok(auth_cookie) = auth_cookie {
-            auth_cookie
-        } else {
-            return (jar, Err(AuthAPIError::UnexpectedError));
-        };
-
-        let updated_jar = jar.add(auth_cookie);
-        let response = axum::Json(LoginResponse::RegularAuth);
-        (updated_jar, Ok((StatusCode::OK, response)))
+        handle_no_2fa(&email, jar).await
     }
 }
-// New!
-// async fn handle_2fa(
-//     jar: CookieJar,
-// ) -> (
-//     CookieJar,
-//     Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
-// ) {
-//     // let auth_cookie = generate_auth_cookie(&email);
 
-//     // let auth_cookie = if let Ok(auth_cookie) = auth_cookie {
-//     //     auth_cookie
-//     // } else {
-//     //     return (jar, Err(AuthAPIError::UnexpectedError));
-//     // };
+#[tracing::instrument(name = "Handle 2FA", skip_all)]
+async fn handle_2fa(
+    jar: CookieJar,
+    state: AppState,
+    email: Email,
+) -> (
+    CookieJar,
+    Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
+) {
+    let login_attempt_id = LoginAttemptId::default();
+    let two_fa_code = TwoFACode::default();
 
-//     // let updated_jar = jar.add(auth_cookie);
-//     let two_factor_response = TwoFactorAuthResponse {
-//         message: "2FA required".to_string(),
-//         login_attempt_id: "123456".to_string(),
-//     };
-//     (
-//         jar,
-//         Ok((
-//             StatusCode::OK,
-//             axum::Json(LoginResponse::TwoFactorAuth(two_factor_response)),
-//         )),
-//     )
-// }
+    {
+        let mut two_fa_store = state.two_fa_code_store.write().await;
+        if let Err(e) = two_fa_store
+            .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
+            .await
+        {
+            return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
+        }
+    }
 
-// New!
-// async fn handle_no_2fa(
-//     email: &Email,
-//     jar: CookieJar,
-// ) -> (
-//     CookieJar,
-//     Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
-// ) {
-//     let auth_cookie = generate_auth_cookie(&email);
+    let email_client = state.email_client.write().await;
+    if let Err(e) = email_client
+        .send_email(&email, "login now", two_fa_code.as_ref())
+        .await
+    {
+        return (jar, Err(AuthAPIError::UnexpectedError(e)));
+    }
 
-//     let auth_cookie = if let Ok(auth_cookie) = auth_cookie {
-//         auth_cookie
-//     } else {
-//         return (jar, Err(AuthAPIError::UnexpectedError));
-//     };
+    let two_factor_response = TwoFactorAuthResponse {
+        message: "2FA required".to_string(),
+        login_attempt_id: login_attempt_id.as_ref().to_string(),
+    };
+    (
+        jar,
+        Ok((
+            StatusCode::PARTIAL_CONTENT,
+            axum::Json(LoginResponse::TwoFactorAuth(two_factor_response)),
+        )),
+    )
+}
 
-//     let updated_jar = jar.add(auth_cookie);
-//     let response = axum::Json(LoginResponse::RegularAuth);
-//     (updated_jar, Ok((StatusCode::OK, response)))
-// }
+#[tracing::instrument(name = "Handle No 2FA", skip_all)]
+async fn handle_no_2fa(
+    email: &Email,
+    jar: CookieJar,
+) -> (
+    CookieJar,
+    Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
+) {
+    let auth_cookie = generate_auth_cookie(&email);
+
+    let auth_cookie = match auth_cookie {
+        Ok(auth_cookie) => auth_cookie,
+        Err(e) => {
+            return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
+        }
+    };
+
+    let updated_jar = jar.add(auth_cookie);
+    let response = axum::Json(LoginResponse::RegularAuth);
+    (updated_jar, Ok((StatusCode::OK, response)))
+}
 
 // The login route can return 2 possible success responses.
 // This enum models each response!

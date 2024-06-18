@@ -20,6 +20,7 @@ impl RedisBannedTokenStore {
 
 #[async_trait::async_trait]
 impl BannedTokenStore for RedisBannedTokenStore {
+    #[tracing::instrument(name = "Add Token", skip_all)]
     async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
         // TODO:
         // 1. Create a new key using the get_key helper function.
@@ -33,11 +34,12 @@ impl BannedTokenStore for RedisBannedTokenStore {
         let mut write_lock = self.conn.write().await;
         write_lock
             .set_ex(key, true, TOKEN_TTL_SECONDS as u64)
-            .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
+            .map_err(|e| BannedTokenStoreError::UnexpectedError(e.into()))?;
 
         Ok(())
     }
 
+    #[tracing::instrument(name = "Contains Token", skip_all)]
     async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
         // Check if the token exists by calling the exists method on the Redis connection
         let key = get_key(&token);
@@ -46,7 +48,7 @@ impl BannedTokenStore for RedisBannedTokenStore {
 
         let exists = read_lock
             .exists(key)
-            .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
+            .map_err(|e| BannedTokenStoreError::UnexpectedError(e.into()))?;
 
         Ok(exists)
     }
