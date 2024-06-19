@@ -1,3 +1,4 @@
+use secrecy::Secret;
 use axum::http::StatusCode;
 use axum::Json;
 use axum::{extract::State, response::IntoResponse};
@@ -13,7 +14,7 @@ use crate::domain::user::User;
 #[derive(Deserialize, Debug)]
 pub struct SignupRequest {
     pub email: String,
-    pub password: String,
+    pub password: Secret<String>,
     #[serde(rename = "requires2FA")]
     pub requires_2fa: bool,
 }
@@ -34,7 +35,8 @@ pub async fn signup_handler(
     // Create a new `User` instance using data in the `request`
     let mut user_store = state.user_store.write().await;
 
-    let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let secret_email = Secret::new(request.email);
+    let email = Email::parse(secret_email).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     let password =
         Password::parse(request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;

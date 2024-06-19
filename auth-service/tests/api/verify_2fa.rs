@@ -4,6 +4,7 @@ use auth_service::{
         Email,
     }, routes::LoginResponse, utils::constants::JWT_COOKIE_NAME
 };
+use secrecy::{ExposeSecret, Secret};
 use serde_json::json;
 
 use crate::helpers::{get_random_email, TestApp};
@@ -27,17 +28,17 @@ async fn should_return_400_if_invalid_input() {
         json!({
             "email": get_random_email(),
             "loginAttemptId": "oij",
-            "2FACode": TwoFACode::default(),
+            "2FACode": TwoFACode::default().0.expose_secret(),
         }),
         json!({
             "email": get_random_email(),
-            "loginAttemptId": LoginAttemptId::default(),
+            "loginAttemptId": LoginAttemptId::default().0.expose_secret(),
             "2FACode": "12",
         }),
         json!({
             "email": "",
-            "loginAttemptId": LoginAttemptId::default(),
-            "2FACode": TwoFACode::default(),
+            "loginAttemptId": LoginAttemptId::default().0.expose_secret(),
+            "2FACode": TwoFACode::default().0.expose_secret(),
         }),
     ];
 
@@ -115,7 +116,7 @@ async fn should_return_401_if_old_code() {
                                                     // first login, but we don't care about the response
     let _ = app.post_login(&login_request).await;
 
-    let email = Email::parse(random_email.clone()).unwrap();
+    let email = Email::parse(Secret::new(random_email.clone())).unwrap();
     let first_code = app.two_fa_store.read().await.get_code(&email).await.unwrap().1;
 
     // second login attempt, the code we just grabbed shoudl be invalidated
@@ -132,7 +133,7 @@ async fn should_return_401_if_old_code() {
                 .post_verify_2fa(&json!({
                     "email": random_email,
                     "loginAttemptId": two_fa_respons.login_attempt_id,
-                    "2FACode": first_code, //(hopefully) incorrect code!
+                    "2FACode": first_code.0.expose_secret(), //(hopefully) incorrect code!
                 }))
                 .await;
 
@@ -164,7 +165,7 @@ async fn should_return_200_if_correct_code() {
     let _ = app.post_signup(&user_to_create).await; // call `post_signup`
                                                     // first login, but we don't care about the response
 
-    let email = Email::parse(random_email.clone()).unwrap();
+    let email = Email::parse(Secret::new(random_email.clone())).unwrap();
 
     // second login attempt, the code we just grabbed shoudl be invalidated
     let login_res = app.post_login(&login_request).await;
@@ -181,7 +182,7 @@ async fn should_return_200_if_correct_code() {
                 .post_verify_2fa(&json!({
                     "email": random_email,
                     "loginAttemptId": two_fa_respons.login_attempt_id,
-                    "2FACode": code, //(hopefully) incorrect code!
+                    "2FACode": code.0.expose_secret(), //(hopefully) incorrect code!
                 }))
                 .await;
 
@@ -221,7 +222,7 @@ async fn should_return_401_if_same_code_twice() {
     let _ = app.post_signup(&user_to_create).await; // call `post_signup`
                                                     // first login, but we don't care about the response
 
-    let email = Email::parse(random_email.clone()).unwrap();
+    let email = Email::parse(Secret::new(random_email.clone())).unwrap();
 
     // second login attempt, the code we just grabbed shoudl be invalidated
     let login_res = app.post_login(&login_request).await;
@@ -238,7 +239,7 @@ async fn should_return_401_if_same_code_twice() {
                 .post_verify_2fa(&json!({
                     "email": random_email,
                     "loginAttemptId": two_fa_respons.login_attempt_id,
-                    "2FACode": code, //(hopefully) incorrect code!
+                    "2FACode": code.0.expose_secret(), //(hopefully) incorrect code!
                 }))
                 .await;
 
@@ -256,7 +257,7 @@ async fn should_return_401_if_same_code_twice() {
                 .post_verify_2fa(&json!({
                     "email": random_email,
                     "loginAttemptId": two_fa_respons.login_attempt_id,
-                    "2FACode": code, //(hopefully) incorrect code!
+                    "2FACode": code.0.expose_secret(), //(hopefully) incorrect code!
                 }))
                 .await;
 

@@ -22,6 +22,6 @@ pub async fn verify_token(
 ) -> Result<impl IntoResponse, AuthAPIError> {
     match validate_token(&request.token, &state.banned_token_store).await {
         Ok(_) => Ok(StatusCode::OK.into_response()),
-        Err(e) => Err(AuthAPIError::InvalidToken),
+        Err(_) => Err(AuthAPIError::InvalidToken),
     }
 }

@@ -61,16 +61,20 @@ impl UserStore for HashMapUserStore {
 // TODO: Add unit tests for your `HashmapUserStore` implementation
 #[cfg(test)]
 mod tests {
+    use secrecy::Secret;
+
     use super::*;
 
     #[tokio::test]
     async fn test_add_user() {
         let mut test_store = HashMapUserStore::default();
 
-        let email = Email::parse("email@yahoo.net".to_string()).unwrap();
+        let secret_email = Secret::new("email@yahoo.net".to_string());
+        let email = Email::parse(secret_email).unwrap();
+        let secret = Secret::new("passwordistaco".to_string());
         let test_user = User {
             email,
-            password: Password::parse("passwordistaco".to_string()).unwrap(),
+            password: Password::parse(secret).unwrap(),
             requires_2fa: false,
         };
 
@@ -83,10 +87,12 @@ mod tests {
     async fn test_get_user() {
         let mut test_store = HashMapUserStore::default();
 
-        let email = Email::parse("email@yahoo.net".to_string()).unwrap();
+        let secret_email = Secret::new("email@yahoo.net".to_string());
+        let email = Email::parse(secret_email).unwrap();
+        let secret = Secret::new("passwordistaco".to_string());
         let test_user = User {
             email: email.clone(),
-            password: Password::parse("passwordistaco".to_string()).unwrap(),
+            password: Password::parse(secret).unwrap(),
             requires_2fa: false,
         };
 
@@ -101,10 +107,12 @@ mod tests {
     async fn test_validate_user() {
         let mut test_store = HashMapUserStore::default();
 
-        let email = Email::parse("email@yahoo.net".to_string()).unwrap();
+        let secret_email = Secret::new("email@yahoo.net".to_string());
+        let email = Email::parse(secret_email).unwrap();
+        let secret = Secret::new("passwordistaco".to_string());
         let test_user = User {
             email,
-            password: Password::parse("passwordistaco".to_string()).unwrap(),
+            password: Password::parse(secret).unwrap(),
             requires_2fa: false,
         };
 

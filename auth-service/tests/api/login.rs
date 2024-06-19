@@ -1,5 +1,6 @@
 use crate::helpers::{get_random_email, TestApp};
 use auth_service::{domain::email::Email, routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME};
+use secrecy::Secret;
 use serde_json::json;
 
 #[tokio::test]
@@ -115,7 +116,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     // let id = json_body.login_attempt_id;
     {
         let two_fa_stuff = app.two_fa_store.read().await;
-        match two_fa_stuff.get_code(&Email::parse(random_email).expect("parse email")).await {
+        match two_fa_stuff.get_code(&Email::parse(Secret::new(random_email)).expect("parse email")).await {
             Ok((_, _)) => {},
             Err(_) => {
                 panic!("Email wasn't present in 2FA code store")

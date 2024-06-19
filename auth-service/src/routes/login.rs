@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use axum_extra::extract::CookieJar;
+use secrecy::Secret;
 use serde::{Deserialize, Serialize};
 
 use crate::app_state::AppState;
@@ -15,7 +16,7 @@ use crate::utils::auth::generate_auth_cookie;
 #[derive(Deserialize, Debug)]
 pub struct LoginRequest {
     email: String,
-    password: String,
+    password: Secret<String>,
 }
 
 #[tracing::instrument(name = "Login", skip_all)]
@@ -24,7 +25,8 @@ pub async fn login_handler(
     jar: CookieJar,
     Json(request): Json<LoginRequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let email = Email::parse(request.email);
+    let secret_email = Secret::new(request.email);
+    let email = Email::parse(secret_email);
     let password = Password::parse(request.password);
 
     let (email, password) = if let (Ok(email), Ok(password)) = (email, password) {

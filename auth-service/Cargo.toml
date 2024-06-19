@@ -27,5 +27,11 @@ tracing-subscriber = { version = "0.3.18", features = ["registry", "env-filter"]
 thiserror = "1.0.61"
 color-eyre = "0.6.3"
 tracing-error = "0.2.0"
+secrecy = { version = "0.8.0", features = ["serde"] }
+fake = "2.9.2"
+validator = "0.18.1"
+
 [dev-dependencies]
 reqwest = {version="0.12.4", default-features = false, features=["json", "cookies"] }
+quickcheck = "1.0.3"
+quickcheck_macros = "1.0.0"
