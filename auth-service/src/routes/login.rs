@@ -25,8 +25,7 @@ pub async fn login_handler(
     jar: CookieJar,
     Json(request): Json<LoginRequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let secret_email = Secret::new(request.email);
-    let email = Email::parse(secret_email);
+    let email = Email::parse(request.email);
     let password = Password::parse(request.password);
 
     let (email, password) = if let (Ok(email), Ok(password)) = (email, password) {

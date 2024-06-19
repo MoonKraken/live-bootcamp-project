@@ -40,7 +40,7 @@ async fn should_return_401_if_invalid_token() {
 async fn should_return_200_if_valid_jwt_cookie() {
     let mut app = TestApp::new().await;
 
-    let email = Email::parse(Secret::new(get_random_email())).expect("email should be parseable");
+    let email = Email::parse(get_random_email()).expect("email should be parseable");
     let cookie = generate_auth_cookie(&email).expect("should generate auth cookie");
     app.cookie_jar.add_cookie_str(
         &cookie.to_string(),
@@ -68,7 +68,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
 async fn should_return_400_if_logout_called_twice_in_a_row() {
     let mut app = TestApp::new().await;
 
-    let email = Email::parse(Secret::new(get_random_email())).expect("email should be parseable");
+    let email = Email::parse(get_random_email()).expect("email should be parseable");
     let cookie = generate_auth_cookie(&email).expect("should generate auth cookie");
     app.cookie_jar.add_cookie_str(
         &cookie.to_string(),

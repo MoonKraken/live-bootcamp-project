@@ -4,7 +4,7 @@ use auth_service::{
         Email,
     }, routes::LoginResponse, utils::constants::JWT_COOKIE_NAME
 };
-use secrecy::{ExposeSecret, Secret};
+use secrecy::ExposeSecret;
 use serde_json::json;
 
 use crate::helpers::{get_random_email, TestApp};
@@ -116,7 +116,7 @@ async fn should_return_401_if_old_code() {
                                                     // first login, but we don't care about the response
     let _ = app.post_login(&login_request).await;
 
-    let email = Email::parse(Secret::new(random_email.clone())).unwrap();
+    let email = Email::parse(random_email.clone()).unwrap();
     let first_code = app.two_fa_store.read().await.get_code(&email).await.unwrap().1;
 
     // second login attempt, the code we just grabbed shoudl be invalidated
@@ -165,7 +165,7 @@ async fn should_return_200_if_correct_code() {
     let _ = app.post_signup(&user_to_create).await; // call `post_signup`
                                                     // first login, but we don't care about the response
 
-    let email = Email::parse(Secret::new(random_email.clone())).unwrap();
+    let email = Email::parse(random_email.clone()).unwrap();
 
     // second login attempt, the code we just grabbed shoudl be invalidated
     let login_res = app.post_login(&login_request).await;
@@ -222,7 +222,7 @@ async fn should_return_401_if_same_code_twice() {
     let _ = app.post_signup(&user_to_create).await; // call `post_signup`
                                                     // first login, but we don't care about the response
 
-    let email = Email::parse(Secret::new(random_email.clone())).unwrap();
+    let email = Email::parse(random_email.clone()).unwrap();
 
     // second login attempt, the code we just grabbed shoudl be invalidated
     let login_res = app.post_login(&login_request).await;

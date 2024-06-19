@@ -1,19 +1,21 @@
 use auth_service::app_state::AppState;
 use auth_service::app_state::BannedTokenStoreType;
-use auth_service::app_state::EmailClientType;
 use auth_service::app_state::TwoFACodeStoreType;
 use auth_service::app_state::UserStoreType;
+use auth_service::domain::Email;
 use auth_service::get_postgres_pool;
 use auth_service::get_redis_client;
 use auth_service::services::data_stores::postgres_user_store::PostgresUserStore;
 use auth_service::services::data_stores::redis_banned_token_store::RedisBannedTokenStore;
 use auth_service::services::data_stores::redis_two_fa_code_store::RedisTwoFACodeStore;
-use auth_service::services::mock_email_client::MockEmailClient;
+use auth_service::services::postmark_email_client::PostmarkEmailClient;
 use auth_service::utils::constants::prod;
 use auth_service::utils::constants::DATABASE_URL;
+use auth_service::utils::constants::POSTMARK_AUTH_TOKEN;
 use auth_service::utils::constants::REDIS_HOST_NAME;
 use auth_service::utils::tracing::init_tracing;
 use auth_service::Application;
+use reqwest::Client;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -31,7 +33,7 @@ async fn main() {
     ));
     let two_fa_store: TwoFACodeStoreType =
         Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_connection)));
-    let email_client: EmailClientType = Arc::new(RwLock::new(MockEmailClient::default()));
+    let email_client = Arc::new(RwLock::new(configure_postmark_email_client()));
     let app_state = AppState::new(user_store, banned_token_store, two_fa_store, email_client);
     let app = Application::build(app_state, prod::APP_ADDRESS)
         .await
@@ -60,4 +62,18 @@ fn configure_redis() -> redis::Connection {
         .expect("Failed to get Redis client")
         .get_connection()
         .expect("Failed to get Redis connection")
+}
+
+fn configure_postmark_email_client() -> PostmarkEmailClient {
+    let http_client = Client::builder()
+        .timeout(prod::email_client::TIMEOUT)
+        .build()
+        .expect("Failed to build HTTP client");
+
+    PostmarkEmailClient::new(
+        prod::email_client::BASE_URL.to_owned(),
+        Email::parse(prod::email_client::SENDER.to_owned()).unwrap(),
+        POSTMARK_AUTH_TOKEN.to_owned(),
+        http_client,
+    )
 }

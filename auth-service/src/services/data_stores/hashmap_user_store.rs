@@ -69,8 +69,7 @@ mod tests {
     async fn test_add_user() {
         let mut test_store = HashMapUserStore::default();
 
-        let secret_email = Secret::new("email@yahoo.net".to_string());
-        let email = Email::parse(secret_email).unwrap();
+        let email = Email::parse("email@yahoo.net".to_string()).unwrap();
         let secret = Secret::new("passwordistaco".to_string());
         let test_user = User {
             email,
@@ -86,9 +85,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_user() {
         let mut test_store = HashMapUserStore::default();
-
-        let secret_email = Secret::new("email@yahoo.net".to_string());
-        let email = Email::parse(secret_email).unwrap();
+        let email = Email::parse("email@yahoo.net".to_string()).unwrap();
         let secret = Secret::new("passwordistaco".to_string());
         let test_user = User {
             email: email.clone(),
@@ -106,9 +103,7 @@ mod tests {
     #[tokio::test]
     async fn test_validate_user() {
         let mut test_store = HashMapUserStore::default();
-
-        let secret_email = Secret::new("email@yahoo.net".to_string());
-        let email = Email::parse(secret_email).unwrap();
+        let email = Email::parse("email@yahoo.net".to_string()).unwrap();
         let secret = Secret::new("passwordistaco".to_string());
         let test_user = User {
             email,

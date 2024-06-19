@@ -17,7 +17,7 @@ async fn should_return_422_if_malformed_input() {
 async fn should_return_200_valid_token() {
     let mut app = TestApp::new().await;
 
-    let email = Email::parse(Secret::new(get_random_email())).expect("email should be parseable");
+    let email = Email::parse(get_random_email()).expect("email should be parseable");
     let valid_token = generate_auth_token(&email).expect("should generate token");
 
     let response = app.post_verify_token(&json!({
@@ -44,7 +44,7 @@ async fn should_return_401_if_invalid_token() {
 async fn should_return_401_if_banned_token() {
     let mut app = TestApp::new().await;
 
-    let email = Email::parse(Secret::new(get_random_email())).expect("email should be parseable");
+    let email = Email::parse(get_random_email()).expect("email should be parseable");
     let valid_token = generate_auth_token(&email).expect("should generate token");
     {
         let mut banned_store = app.banned_token_store.write().await;

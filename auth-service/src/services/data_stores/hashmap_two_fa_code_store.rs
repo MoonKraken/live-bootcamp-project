@@ -42,16 +42,13 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
 
 #[cfg(test)]
 mod tests {
-    use secrecy::Secret;
-
     use crate::domain::{data_stores::{LoginAttemptId, TwoFACode, TwoFACodeStore}, email::Email};
 
     use super::HashmapTwoFACodeStore;
 
     #[tokio::test]
     async fn should_add_code() {
-        let secret_email = Secret::new("ken@cttm.io".to_string());
-        let email = Email::parse(secret_email).expect("email should be parsed");
+        let email = Email::parse("ken@cttm.io".to_string()).expect("email should be parsed");
         let mut store = HashmapTwoFACodeStore::default();
         let res = store.add_code(email, LoginAttemptId::default(), TwoFACode::default()).await;
         assert_eq!(res, Ok(()));

@@ -2,7 +2,6 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{response::IntoResponse, Json};
 use axum_extra::extract::CookieJar;
-use secrecy::Secret;
 use serde::Deserialize;
 
 use crate::app_state::AppState;
@@ -28,8 +27,7 @@ pub async fn verify_2fa_handler(
     Json(request): Json<Verify2FARequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
     // Update this to a custom message!
-    let secret_email = Secret::new(request.email);
-    let email = if let Ok(val) = Email::parse(secret_email) {
+    let email = if let Ok(val) = Email::parse(request.email) {
         val
     } else {
         return (jar, Err(AuthAPIError::InvalidCredentials));

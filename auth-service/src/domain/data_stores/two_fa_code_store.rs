@@ -3,7 +3,7 @@ use secrecy::{ExposeSecret, Secret};
 use thiserror::Error;
 use async_trait::async_trait;
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::domain::email::Email;
