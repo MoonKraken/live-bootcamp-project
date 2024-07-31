@@ -2,6 +2,7 @@ use std::hash::Hash; // New!
 
 use color_eyre::eyre::{eyre, Result};
 use secrecy::{ExposeSecret, Secret}; // New!
+use validator::ValidateEmail;
 
 #[derive(Debug, Clone)]
 pub struct Email(pub Secret<String>);
@@ -27,7 +28,7 @@ impl Eq for Email {}
 impl Email {
     pub fn parse(s: String) -> Result<Email> {
         // ultra simple validation
-        if s.contains("@") {
+        if s.validate_email() {
             Ok(Self(Secret::new(s)))
         } else {
             Err(eyre!(format!(
@@ -53,6 +54,18 @@ mod tests {
     fn email_without_at_cannot_be_parsed() {
         let res: Result<Email> = Email::parse("hello".to_string());
         let expected_error_string = "hello is not a valid email.";
+
+        // why doesn't eyre ErrReport implement PartialEq??
+        match res {
+            Err(e) => assert_eq!(e.to_string(), expected_error_string),
+            _ => panic!("error was expected when parsing invalid email"),
+        }
+    }
+
+    #[test]
+    fn email_with_two_at_cannot_be_parsed() {
+        let res: Result<Email> = Email::parse("hello@hello@hello.com".to_string());
+        let expected_error_string = "hello@hello@hello.com is not a valid email.";
 
         // why doesn't eyre ErrReport implement PartialEq??
         match res {
