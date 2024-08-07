@@ -1,6 +1,5 @@
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
 use axum::Json;
 use axum_extra::extract::CookieJar;
 use secrecy::Secret;
@@ -24,29 +23,22 @@ pub async fn login_handler(
     State(state): State<AppState>,
     jar: CookieJar,
     Json(request): Json<LoginRequest>,
-) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let email = Email::parse(request.email);
-    let password = Password::parse(request.password);
-
-    let (email, password) = if let (Ok(email), Ok(password)) = (email, password) {
-        (email, password)
-    } else {
-        return (jar, Err(AuthAPIError::InvalidCredentials));
-    };
+) -> Result<(CookieJar, (StatusCode, axum::Json<LoginResponse>)), AuthAPIError> {
+    let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let password =
+        Password::parse(request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     let user_store = state.user_store.read().await;
 
-    if let Err(_) = user_store.validate_user(&email, &password).await {
-        return (jar, Err(AuthAPIError::IncorrectCredentials));
-    }
+    user_store
+        .validate_user(&email, &password)
+        .await
+        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
 
-    let user = user_store.get_user(&email).await;
-
-    let user = if let Ok(user) = user {
-        user
-    } else {
-        return (jar, Err(AuthAPIError::IncorrectCredentials));
-    };
+    let user = user_store
+        .get_user(&email)
+        .await
+        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
 
     if user.requires_2fa {
         handle_2fa(jar, state.clone(), email).await
@@ -60,64 +52,48 @@ async fn handle_2fa(
     jar: CookieJar,
     state: AppState,
     email: Email,
-) -> (
-    CookieJar,
-    Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
-) {
+) -> Result<(CookieJar, (StatusCode, axum::Json<LoginResponse>)), AuthAPIError> {
     let login_attempt_id = LoginAttemptId::default();
     let two_fa_code = TwoFACode::default();
 
     {
         let mut two_fa_store = state.two_fa_code_store.write().await;
-        if let Err(e) = two_fa_store
+        two_fa_store
             .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
             .await
-        {
-            return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
-        }
+            .map_err(|e| AuthAPIError::UnexpectedError(e.into()))?;
     }
 
     let email_client = state.email_client.write().await;
-    if let Err(e) = email_client
+    email_client
         .send_email(&email, "login now", two_fa_code.as_ref())
         .await
-    {
-        return (jar, Err(AuthAPIError::UnexpectedError(e)));
-    }
+        .map_err(|e| AuthAPIError::UnexpectedError(e.into()))?;
 
     let two_factor_response = TwoFactorAuthResponse {
         message: "2FA required".to_string(),
         login_attempt_id: login_attempt_id.as_ref().to_string(),
     };
-    (
+
+    Ok((
         jar,
-        Ok((
+        (
             StatusCode::PARTIAL_CONTENT,
             axum::Json(LoginResponse::TwoFactorAuth(two_factor_response)),
-        )),
-    )
+        )
+    ))
 }
 
 #[tracing::instrument(name = "Handle No 2FA", skip_all)]
 async fn handle_no_2fa(
     email: &Email,
     jar: CookieJar,
-) -> (
-    CookieJar,
-    Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
-) {
-    let auth_cookie = generate_auth_cookie(&email);
-
-    let auth_cookie = match auth_cookie {
-        Ok(auth_cookie) => auth_cookie,
-        Err(e) => {
-            return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
-        }
-    };
-
+) -> Result<(CookieJar, (StatusCode, axum::Json<LoginResponse>)), AuthAPIError> {
+    let auth_cookie =
+        generate_auth_cookie(&email).map_err(|e| AuthAPIError::UnexpectedError(e.into()))?;
     let updated_jar = jar.add(auth_cookie);
     let response = axum::Json(LoginResponse::RegularAuth);
-    (updated_jar, Ok((StatusCode::OK, response)))
+    Ok((updated_jar, (StatusCode::OK, response)))
 }
 
 // The login route can return 2 possible success responses.
