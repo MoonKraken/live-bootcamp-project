@@ -30,7 +30,7 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
     }
 
     async fn get_code(
-        &self,
+        &mut self,
         email: &Email,
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError> {
         match self.codes.get(email) {

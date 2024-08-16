@@ -1,9 +1,6 @@
-use std::sync::Arc;
-
 use redis::{Commands, Connection};
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
 
 use crate::domain::{
     data_stores::{LoginAttemptId, TwoFACode, TwoFACodeStore, TwoFACodeStoreError},
@@ -11,11 +8,11 @@ use crate::domain::{
 };
 
 pub struct RedisTwoFACodeStore {
-    conn: Arc<RwLock<Connection>>,
+    conn: Connection,
 }
 
 impl RedisTwoFACodeStore {
-    pub fn new(conn: Arc<RwLock<Connection>>) -> Self {
+    pub fn new(conn: Connection) -> Self {
         Self { conn }
     }
 }
@@ -44,10 +41,9 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
             login_attempt_id.as_ref().to_string(),
             code.as_ref().to_string(),
         );
-        let mut write_lock = self.conn.write().await;
         let json_string = serde_json::to_string(&tuple)
             .map_err(|e| TwoFACodeStoreError::UnexpectedError(e.into()))?;
-        write_lock
+        self.conn
             .set_ex(key, json_string, TEN_MINUTES_IN_SECONDS)
             .map_err(|e| TwoFACodeStoreError::UnexpectedError(e.into()))?;
 
@@ -62,8 +58,7 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
         // Return TwoFACodeStoreError::UnexpectedError if the operation fails.
 
         let key = get_key(&email);
-        let mut write_lock = self.conn.write().await;
-        write_lock
+        self.conn
             .del(key)
             .map_err(|e| TwoFACodeStoreError::UnexpectedError(e.into()))?;
         Ok(())
@@ -71,7 +66,7 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
 
     #[tracing::instrument(name = "Get Two FA Code", skip_all)]
     async fn get_code(
-        &self,
+        &mut self,
         email: &Email,
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError> {
         // TODO:
@@ -83,8 +78,7 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
         // Return TwoFACodeStoreError::UnexpectedError if parsing fails.
 
         let key = get_key(&email);
-        let mut write_lock = self.conn.write().await;
-        let val: String = write_lock
+        let val: String = self.conn
             .get(key)
             .map_err(|_| TwoFACodeStoreError::LoginAttemptIdNotFound)?;
 

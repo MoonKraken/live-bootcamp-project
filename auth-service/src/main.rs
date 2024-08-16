@@ -32,7 +32,7 @@ async fn main() {
         RedisBannedTokenStore::new(redis_connection.clone()),
     ));
     let two_fa_store: TwoFACodeStoreType =
-        Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_connection)));
+        Arc::new(RwLock::new(RedisTwoFACodeStore::new(configure_redis())));
     let email_client = Arc::new(RwLock::new(configure_postmark_email_client()));
     let app_state = AppState::new(user_store, banned_token_store, two_fa_store, email_client);
     let app = Application::build(app_state, prod::APP_ADDRESS)

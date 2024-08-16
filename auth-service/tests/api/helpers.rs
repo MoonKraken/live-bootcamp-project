@@ -45,7 +45,7 @@ impl TestApp {
         let banned_token_store: BannedTokenStoreType =
             Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_connection.clone())));
         let two_fa_store: TwoFACodeStoreType =
-            Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_connection)));
+            Arc::new(RwLock::new(RedisTwoFACodeStore::new(configure_redis())));
 
         let email_client: EmailClientType = Arc::new(RwLock::new(MockEmailClient::default()));
         let cookie_jar = Arc::new(Jar::default());

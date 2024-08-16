@@ -114,7 +114,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     // let id = json_body.login_attempt_id;
     {
-        let two_fa_stuff = app.two_fa_store.read().await;
+        let mut two_fa_stuff = app.two_fa_store.write().await;
         match two_fa_stuff.get_code(&Email::parse(random_email).expect("parse email")).await {
             Ok((_, _)) => {},
             Err(_) => {
