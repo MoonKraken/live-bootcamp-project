@@ -24,15 +24,17 @@ pub struct TestApp {
     pub banned_token_store: BannedTokenStoreType,
     pub two_fa_store: TwoFACodeStoreType,
     pub db_name: String,
-    pub clean_up_called: bool,
 }
 
 // ideally we'd call cleanup here but Bogdan says it's not possible because Async destructors are not supported
 impl Drop for TestApp {
     fn drop(&mut self) {
-        if !self.clean_up_called {
-            panic!("cleanup wasn't called!")
-        }
+        tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(async {
+                let result = delete_database(&self.db_name).await;
+                dbg!(result);
+            })
+        });
     }
 }
 
@@ -42,8 +44,9 @@ impl TestApp {
         let pg_pool = configure_postgresql(&db_name).await;
         let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
         let redis_connection = Arc::new(RwLock::new(configure_redis()));
-        let banned_token_store: BannedTokenStoreType =
-            Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_connection.clone())));
+        let banned_token_store: BannedTokenStoreType = Arc::new(RwLock::new(
+            RedisBannedTokenStore::new(redis_connection.clone()),
+        ));
         let two_fa_store: TwoFACodeStoreType =
             Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_connection)));
 
@@ -79,13 +82,7 @@ impl TestApp {
             banned_token_store,
             two_fa_store,
             db_name,
-            clean_up_called: false,
         }
-    }
-
-    pub async fn clean_up(&mut self) {
-        self.clean_up_called = true;
-        delete_database(&self.db_name).await;
     }
 
     pub async fn post_signup<Body>(&self, body: &Body) -> reqwest::Response
@@ -194,7 +191,11 @@ pub async fn configure_postgresql(db_name: &str) -> PgPool {
 
     configure_database(&postgresql_conn_url, &db_name).await;
 
-    let postgresql_conn_url_with_db = Secret::new(format!("{}/{}", postgresql_conn_url.expose_secret(), db_name));
+    let postgresql_conn_url_with_db = Secret::new(format!(
+        "{}/{}",
+        postgresql_conn_url.expose_secret(),
+        db_name
+    ));
 
     // Create a new connection pool and return it
     get_postgres_pool(&postgresql_conn_url_with_db)

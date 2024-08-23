@@ -15,7 +15,6 @@ weoifjwofiej
     let response = app.post_login(&body).await;
 
     assert_eq!(response.status().as_u16(), 422);
-    app.clean_up().await;
 }
 
 #[tokio::test]
@@ -33,7 +32,6 @@ async fn should_return_400_if_invalid_input() {
     let response = app.post_login(&body).await;
 
     assert_eq!(response.status().as_u16(), 400);
-    app.clean_up().await;
 }
 
 #[tokio::test]
@@ -49,7 +47,6 @@ async fn should_return_401_if_incorrect_credentials() {
     let response = app.post_login(&body).await;
 
     assert_eq!(response.status().as_u16(), 401);
-    app.clean_up().await;
 }
 
 #[tokio::test]
@@ -84,7 +81,6 @@ async fn should_return_200_if_correct_credentials() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
-    app.clean_up().await;
 }
 
 #[tokio::test]
@@ -122,5 +118,4 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
             }
         };
     }
-    app.clean_up().await;
 }
