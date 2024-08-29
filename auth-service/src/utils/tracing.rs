@@ -1,4 +1,5 @@
 use axum::{body::Body, extract::Request, response::Response};
+use tracing_chrome::ChromeLayerBuilder;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter};
 use color_eyre::eyre::Result;
@@ -17,12 +18,14 @@ pub fn init_tracing() -> Result<()> {
     // If it fails, default to the "info" log level
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
+    let (chrome_layer, _guard) = ChromeLayerBuilder::new().build();
     // Build the tracing subscriber registry with the formatting layer,
     // the filter layer, and the error layer for enhanced error reporting
     tracing_subscriber::registry()
         .with(filter_layer) // Add the filter layer to control log verbosity
         .with(fmt_layer) // Add the formatting layer for compact log output
         .with(ErrorLayer::default()) // Add the error layer to capture error contexts
+        .with(chrome_layer)
         .init(); // Initialize the tracing subscriber
 
     Ok(())
